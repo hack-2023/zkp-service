@@ -9,3 +9,5 @@ spring:
     schemas: restsample
     user: postgres
     password: postgres
+ec_key: |
+  {"kty":"EC","d":"goc1YAd99JQfoZIaVDZbk-rxZp3vCc931LCkMQGHRt0","use":"sig","crv":"P-256","kid":"55f246f8-1beb-4bda-9c2c-58e0d42252e7","x":"XSAGsBmwvG0spFDdEnszK-GiF2px_IIK73ZqDKJgJVA","y":"bt13vYHv-BWc68xQdbQlNkRoFPtsGR_Zls5dBcWQwA0"}

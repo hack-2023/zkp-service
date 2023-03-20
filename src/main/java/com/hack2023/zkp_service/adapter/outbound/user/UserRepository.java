@@ -8,6 +8,9 @@ import org.springframework.stereotype.Repository;
 import com.hack2023.generated.jooq.model.tables.pojos.User;
 
 import java.util.List;
+import java.util.Optional;
+
+import static com.hack2023.generated.jooq.model.Tables.USER;
 
 @Repository
 public class UserRepository implements UserRepositoryPort {
@@ -19,13 +22,20 @@ public class UserRepository implements UserRepositoryPort {
 
     public List<User> getUsers(){
         return context
-                .selectFrom(Tables.USER)
+                .selectFrom(USER)
                 .fetchInto(User.class);
+    }
+
+    public Optional<User> findUserByEmail(String email){
+        return context
+                .selectFrom(USER)
+                .where(USER.EMAIL.eq(email))
+                .fetchOptionalInto(User.class);
     }
 
     public void insertUser(User user){
         context
-                .insertInto(Tables.USER, Tables.USER.EMAIL, Tables.USER.SOMEHASH)
+                .insertInto(USER, USER.EMAIL, USER.SOMEHASH)
                 .values(user.getEmail(), user.getSomehash())
                 .execute();
     }
