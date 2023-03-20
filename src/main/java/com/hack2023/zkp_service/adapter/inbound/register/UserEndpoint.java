@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-public class RegisterEndpoint {
+public class UserEndpoint {
     private UserService userService;
 
-    public RegisterEndpoint(UserService userService) {
+    public UserEndpoint(UserService userService) {
         this.userService = userService;
     }
 
