@@ -40,7 +40,7 @@ public class LoginService {
         body.setToken(tokenService.generateChallengeToken(request.getEmail(), List.copyOf(set), totalRounds));
         Challenge challenge = new Challenge();
         challenge.setType(SHA_256);
-        challenge.setLink("http://localhost:8080/challenge");
+        challenge.setLink("/challenge");
         challenge.setIndicesToHash(List.copyOf(set));
         challenge.setBody(body);
         response.setEmail(request.getEmail());
