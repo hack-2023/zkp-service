@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: zkp-service
+  name: zkp-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zkp-service
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: zkp-service
+    spec:
+      containers:
+        - image: arangra/zkp-service
+          name: zkp-service
+          ports:
+            - containerPort: 8080
+          env:
+            - name: spring.datasource.url
+              value: jdbc:postgresql://10.153.244.113:5432/postgres
+            - name: spring.flyway.url
+              value: jdbc:postgresql://10.153.244.113:5432/postgres
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: zkp-service
+  name: zkp-service
+spec:
+  ports:
+    - name: 8080-8080
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: zkp-service
+  type: ClusterIP
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    dev.okteto.com/generate-host: "true"
+  name: zkp-service
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: zkp-service
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix

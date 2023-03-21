@@ -1,0 +1,33 @@
+on:
+  workflow_run:
+    workflows: ["build"]
+    branches: [main]
+    types:
+      - completed
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+name: okteto-deploy
+
+jobs:
+
+  devflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@main
+
+      - uses: okteto/context@latest
+        with:
+          token: ${{ secrets.OKTETO_TOKEN }}
+
+      - name: "Activate personal namespace"
+        uses: okteto/namespace@latest
+        with:
+          namespace: amitrangra
+
+      - name: "Create deployment"
+        uses: okteto/apply@latest
+        with:
+          manifest: deployment.yaml
