@@ -22,9 +22,23 @@ spec:
             - containerPort: 8080
           env:
             - name: spring.datasource.url
-              value: jdbc:postgresql://10.153.244.113:5432/postgres
+              value: jdbc:postgresql://10.153.244.113:5432/okteto
+            - name: spring.datasource.username
+              value: okteto
+            - name: spring.datasource.password
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: postgresql-password
             - name: spring.flyway.url
-              value: jdbc:postgresql://10.153.244.113:5432/postgres
+              value: jdbc:postgresql://10.153.244.113:5432/okteto
+            - name: spring.flyway.user
+              value: okteto
+            - name: spring.flyway.password
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: postgresql-password
 status: {}
 
 ---
