@@ -8,6 +8,10 @@ import com.hack2023.zkp_service.domain.UserService;
 import com.hack2023.zkp_service.domain.login.ChallengeService;
 import com.hack2023.zkp_service.domain.login.LoginService;
 import com.hack2023.zkp_service.domain.token.TokenService;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,4 +40,15 @@ public class InboundAdapterConfig {
 
     @Bean
     public GlobalExceptionHandler globalExceptionHandler() {return new GlobalExceptionHandler();}
+
+    @Bean
+    public OpenAPI customOpenAPI(@Value("${application-description}") String appDesciption, @Value("${application-version}") String appVersion) {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("zkp-service API")
+                        .version(appVersion)
+                        .description(appDesciption)
+                        .termsOfService("http://swagger.io/terms/")
+                        .license(new License().name("Apache 2.0").url("http://springdoc.org")));
+    }
 }
