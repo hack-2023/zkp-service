@@ -80,13 +80,13 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>1.17.2</version>
+            <version>1.17.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>1.17.2</version>
+            <version>1.17.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -97,6 +97,49 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.42.0</version>
+                <configuration>
+                    <images>
+                        <image>
+                            <name>postgres:12.1</name>
+                            <alias>postgres-jooq</alias>
+                            <run>
+                                <ports>
+                                    <port>5432:5432</port>
+                                </ports>
+                                <env>
+                                    <POSTGRES_PASSWORD>${postgresql.password}</POSTGRES_PASSWORD>
+                                    <POSTGRES_DB>${postgresql.schema}</POSTGRES_DB>
+                                </env>
+                                <wait>
+                                    <log>.*database system is ready to accept connections.*</log>
+                                    <time>10000</time>
+                                </wait>
+                            </run>
+                        </image>
+                    </images>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -112,6 +155,14 @@
                     </schemas>
                     <baselineOnMigrate>true</baselineOnMigrate>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!--	JOOQ	-->
@@ -120,7 +171,7 @@
                 <artifactId>jooq-codegen-maven</artifactId>
                 <executions>
                     <execution>
-                        <id>generate-postgre</id>
+                        <id>generate-postgres</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>generate</goal>
@@ -157,6 +208,23 @@
                             </directory>
                         </target>
                     </generator>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.0.0-M5</version>
+                <configuration>
+                    <systemProperties>
+                        <property>
+                            <name>postgresql.port</name>
+                            <value>${postgresql.port}</value>
+                        </property>
+                        <property>
+                            <name>docker.host</name>
+                            <value>${docker.hostname}</value>
+                        </property>
+                    </systemProperties>
                 </configuration>
             </plugin>
         </plugins>
