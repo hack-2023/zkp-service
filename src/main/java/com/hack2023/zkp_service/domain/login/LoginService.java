@@ -29,7 +29,7 @@ public class LoginService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         int length = hash.length();
         int challengeLength = ThreadLocalRandom.current().nextInt(length/2, length);
-        int totalRounds = ThreadLocalRandom.current().nextInt(100, 500);
+        int totalRounds = ThreadLocalRandom.current().nextInt(50, 100);
         Set<Integer> set = new Random().ints(0, length)
                 .distinct()
                 .limit(challengeLength)
