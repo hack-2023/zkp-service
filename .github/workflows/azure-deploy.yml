@@ -1,0 +1,41 @@
+name: azure-deployment
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up kubectl
+        run: |
+          VERSION=$(curl --silent https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+          curl -L --remote-name https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Deploy to Azure
+        run: |
+          export AKS_RESOURCE_GROUP=zkp-service
+          export AKS_CLUSTER_NAME=zkp-service-k8s-cluster
+          export AKS_NAMESPACE=zkp
+          
+          # configure kubectl
+          az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME
+          
+          # deploy application
+          kubectl apply -f deployment-aks.yaml -n $AKS_NAMESPACE
+
+      - name: Notify on success
+        run: |
+          echo "Deployment complete!"
