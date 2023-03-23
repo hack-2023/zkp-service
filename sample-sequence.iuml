@@ -1,0 +1,12 @@
+@startuml
+"User/Client" -> Service: registeration request (email + password hash)
+"User/Client" -> Service: login request (email)
+loop
+Service -> "User/Client": response (challenge + link to post challenge response + token to post)
+"User/Client" -> Service: challenge response (challenge answer + email + token from earlier call)
+Service -> "User/Client": challenge answer INvalid (FAILURE and error page)
+Service -> "User/Client": challenge answer Valid (CONTINUE)
+Service -> "User/Client": challenge answer Valid and all challenges solved(SUCCESS and redirect with token)
+end loop
+"User/Client" -> Service: success and access secure page
+@enduml
