@@ -1,5 +1,9 @@
 application-description: @project.description@
 application-version: @project.version@
+login:
+  challenge:
+    minRounds: 50
+    maxRounds: 100
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver

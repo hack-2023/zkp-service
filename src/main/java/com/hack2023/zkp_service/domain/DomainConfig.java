@@ -12,13 +12,19 @@ import org.springframework.context.annotation.Configuration;
 public class DomainConfig {
     @Value( "${ec_key}" )
     private String ecKey;
+
+    @Value( "${login.challenge.minRounds}" )
+    private int minChallengeRounds;
+
+    @Value( "${login.challenge.maxRounds}" )
+    private int maxChallengeRounds;
     @Bean
     public UserService userService(UserRepositoryPort userRepository) {
         return new UserService(userRepository);
     }
 
     @Bean
-    public LoginService loginService(UserRepositoryPort userRepository, TokenService tokenService) {return new LoginService(userRepository, tokenService);}
+    public LoginService loginService(UserRepositoryPort userRepository, TokenService tokenService) {return new LoginService(userRepository, tokenService, minChallengeRounds, maxChallengeRounds);}
 
     @Bean
     public TokenService tokenService() {return new TokenService(ecKey);}

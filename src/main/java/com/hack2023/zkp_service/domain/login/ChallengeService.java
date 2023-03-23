@@ -8,11 +8,11 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.text.ParseException;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import static com.hack2023.zkp_service.domain.login.ChallengeState.CONTINUE;
+import static com.hack2023.zkp_service.domain.login.ChallengeState.FAILURE;
+import static com.hack2023.zkp_service.domain.login.ChallengeState.SUCCESS;
 import static com.hack2023.zkp_service.domain.login.ChallengeType.SHA_256;
 import static org.assertj.core.api.Assertions.assertThat;
 public class ChallengeService {
@@ -26,53 +26,60 @@ public class ChallengeService {
 
     public ChallengeResponse verifyAnswer(ChallengeRequest request) throws ParseException, JOSEException {
         ChallengeResponse response = new ChallengeResponse();
-        JWTClaimsSet claimsSet = tokenService.consumeJweToken(request.getToken());
-        assertThat(claimsSet.getSubject()).isEqualTo(request.getEmail());
-        //assertThat(claimsSet.getExpirationTime()).isAfter(Instant.now());
-        int rounds = claimsSet.getIntegerClaim("round");
-        int totalRounds = claimsSet.getIntegerClaim("totalRounds");
-
-        String hash = userRepository
-                .findUserByEmail(request.getEmail())
-                .map(u -> u.getSomehash())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        int length = hash.length();
-
-        List<Long> indicesToHash = (List<Long>) claimsSet.getClaim("indicesToHash");
-        String dataFromIndices = indicesToHash
-                .stream()
-                .map(l -> hash.charAt(Long.valueOf(l).intValue()))
-                .map(c -> c.toString())
-                .collect(Collectors.joining());
-        String sha3Hex = new DigestUtils("SHA3-256").digestAsHex(dataFromIndices);
+        ChallengeData challengeData = toChallengeData(request);
+        String sha3Hex = new DigestUtils("SHA3-256").digestAsHex(challengeData.getDataFromIndices());
         if(! sha3Hex.equals(request.getChallengeAnswer())) {
-            response.setChallengeState(ChallengeState.FAILURE);
+            response.setChallengeState(FAILURE);
             return response;
         }
 
-        if(totalRounds == rounds+1) {
-            response.setChallengeState(ChallengeState.SUCCESS);
+        if(challengeData.getTotalRounds() == challengeData.getRound()+1) {
+            response.setChallengeState(SUCCESS);
             response.setToken(tokenService.generateLoginToken(request.getEmail()));
             return response;
         }
 
-        int challengeLength = ThreadLocalRandom.current().nextInt(length/2, length);
-        Set<Integer> set = new Random().ints(0, length)
-                .distinct()
-                .limit(challengeLength)
-                .boxed()
-                .collect(Collectors.toSet());
+        return toChallengeResponse(challengeData);
+    }
 
+    private ChallengeResponse toChallengeResponse(ChallengeData challengeData) throws ParseException, JOSEException {
+        ChallengeResponse response = new ChallengeResponse();
         ChallengeBody body = new ChallengeBody();
-        body.setToken(tokenService.generateChallengeToken(request.getEmail(), List.copyOf(set), totalRounds, rounds+1));
+        List<Integer> indicesToHash = challengeData.getIndicesAsList();
+        body.setToken(tokenService.generateChallengeToken(challengeData.getEmail(), indicesToHash, challengeData.getTotalRounds(), challengeData.getRound()+1));
         Challenge challenge = new Challenge();
         challenge.setType(SHA_256);
         challenge.setLink("/challenge");
-        challenge.setIndicesToHash(List.copyOf(set));
+        challenge.setIndicesToHash(indicesToHash);
         challenge.setBody(body);
-        response.setEmail(request.getEmail());
+        response.setEmail(challengeData.getEmail());
         response.setChallenge(challenge);
-        response.setChallengeState(ChallengeState.CONTINUE);
+        response.setChallengeState(CONTINUE);
         return response;
+    }
+
+    private ChallengeData toChallengeData(ChallengeRequest request) throws ParseException {
+        ChallengeData challengeData = new ChallengeData();
+        JWTClaimsSet claimsSet = tokenService.consumeJweToken(request.getToken());
+        assertThat(claimsSet.getSubject()).isEqualTo(request.getEmail());
+        //assertThat(claimsSet.getExpirationTime()).isAfter(Instant.now());
+        challengeData.setEmail(request.getEmail());
+        challengeData.setRound(claimsSet.getIntegerClaim("round"));
+        challengeData.setTotalRounds(claimsSet.getIntegerClaim("totalRounds"));
+        String hash = userRepository
+                .findUserByEmail(request.getEmail())
+                .map(u -> u.getSomehash())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        challengeData.setHashLength(hash.length());
+        challengeData.setDataFromIndices(dataFromIndices(hash, (List<Long>) claimsSet.getClaim("indicesToHash")));
+        return challengeData;
+    }
+
+    private String dataFromIndices(String hash, List<Long> indicesToHash) {
+        return indicesToHash
+                .stream()
+                .map(l -> hash.charAt(Long.valueOf(l).intValue()))
+                .map(c -> c.toString())
+                .collect(Collectors.joining());
     }
 }

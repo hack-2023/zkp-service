@@ -6,44 +6,50 @@ import com.nimbusds.jose.JOSEException;
 
 import java.text.ParseException;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 import static com.hack2023.zkp_service.domain.login.ChallengeType.SHA_256;
 
 public class LoginService {
     private UserRepositoryPort userRepository;
     private TokenService tokenService;
+    private int minChallengeRounds;
+    private int maxChallengeRounds;
 
-    public LoginService(UserRepositoryPort userRepository, TokenService tokenService) {
+    public LoginService(UserRepositoryPort userRepository, TokenService tokenService, int minChallengeRounds, int maxChallengeRounds) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
+        this.minChallengeRounds = minChallengeRounds;
+        this.maxChallengeRounds = maxChallengeRounds;
     }
 
     public LoginResponse login(LoginRequest request) throws ParseException, JOSEException {
+        ChallengeData challengeData = computeChallengeData(request.getEmail());
+        return toLoginResponse(challengeData);
+    }
+
+    private ChallengeData computeChallengeData(String email) {
+        ChallengeData challengeData = new ChallengeData(minChallengeRounds, maxChallengeRounds);
+        challengeData.setEmail(email);
         String hash = userRepository
-                .findUserByEmail(request.getEmail())
+                .findUserByEmail(email)
                 .map(u -> u.getSomehash())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        int length = hash.length();
-        int challengeLength = ThreadLocalRandom.current().nextInt(length/2, length);
-        int totalRounds = ThreadLocalRandom.current().nextInt(50, 100);
-        Set<Integer> set = new Random().ints(0, length)
-                .distinct()
-                .limit(challengeLength)
-                .boxed()
-                .collect(Collectors.toSet());
+        challengeData.setHashLength(hash.length());
+        challengeData.setTotalRounds(challengeData.computeTotalRounds());
+        return challengeData;
+    }
+
+    private LoginResponse toLoginResponse(ChallengeData data) throws ParseException, JOSEException {
         LoginResponse response = new LoginResponse();
         ChallengeBody body = new ChallengeBody();
-        body.setToken(tokenService.generateChallengeToken(request.getEmail(), List.copyOf(set), totalRounds));
+        List<Integer> indicesToHash = data.getIndicesAsList();
+        body.setToken(tokenService.generateChallengeToken(data.getEmail(), indicesToHash, data.getTotalRounds()));
         Challenge challenge = new Challenge();
         challenge.setType(SHA_256);
         challenge.setLink("/challenge");
-        challenge.setIndicesToHash(List.copyOf(set));
+        challenge.setIndicesToHash(indicesToHash);
         challenge.setBody(body);
-        response.setEmail(request.getEmail());
+        response.setEmail(data.getEmail());
         response.setChallenge(challenge);
         return response;
     }
