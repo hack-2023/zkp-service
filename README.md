@@ -8,6 +8,10 @@ The service hosts apis to do certain things:
 - The service does not (at any time) processes the users plain text password
 - The service could be enhanced to present random challenges that could make this whole authentication flow more robust
 
+<b>TODO</b>
+
+- This is just one of the challenges that could be used for the authentication process, more and random challenges need to be thought of and included
+- The password hash rotate mechanism for resetting it by the user and also by the service in case they are leaked
 
 ## Running the application
 Relies on a postgres database, you can start one by the following command:
